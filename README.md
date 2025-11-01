@@ -28,5 +28,7 @@ npm run build
    - Click "Load unpacked"
    - Select the `dist` folder
 
+### Demo page
 
+The demo page in the extension popup provides a easy way to test all the features of HoverPeek.
 
