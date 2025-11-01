@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light theme */
+  --bg: #FFFFFF;
+  --surface: #FAFAFB;
+  --text: #0E1116;
+  --text-weak: #5E687E;
+  --accent: #7C9EFF;
+  --accent-weak: #D9E1FF;
+  --line: #E7EAF0;
+  --safe: #10B981;
+  --warn: #F59E0B;
+  --danger: #EF4444;
+  --info: #60A5FA;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark theme */
+    --bg: #0B0C10;
+    --surface: #111218;
+    --text: #F5F7FA;
+    --text-weak: #BAC2CF;
+    --accent: #7C9EFF;
+    --accent-weak: #2A3552;
+    --line: #1D2230;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+  
+  body {
+    @apply bg-bg text-text font-sans;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-card border border-line;
+    box-shadow: var(--shadow-light, 0 12px 32px rgba(16, 24, 40, .12), 0 2px 6px rgba(16, 24, 40, .08));
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .card {
+      box-shadow: var(--shadow-dark, 0 20px 50px rgba(0, 0, 0, .45), 0 1px 0 rgba(255,255,255,.04) inset);
+    }
+  }
+  
+  .aurora-edge {
+    position: relative;
+  }
+  
+  .aurora-edge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--accent), transparent);
+    border-radius: 14px 14px 0 0;
+    pointer-events: none;
+  }
+  
+  .pill {
+    @apply rounded-pill;
+  }
+}
+

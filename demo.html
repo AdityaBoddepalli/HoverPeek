@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HoverPeek Demo & Test Page</title>
+  
+  <!-- HoverPeek Content Script Styles -->
+  <link rel="stylesheet" href="content.css">
+  
+  <style>
+    :root {
+      --bg: #ffffff;
+      --surface: #fafafa;
+      --text: #1a1a1a;
+      --text-weak: #666666;
+      --line: #e0e0e0;
+      --accent: #7C9EFF;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0a;
+        --surface: #1a1a1a;
+        --text: #e5e5e5;
+        --text-weak: #999999;
+        --line: #2a2a2a;
+        --accent: #7C9EFF;
+      }
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      padding-bottom: 40px;
+      border-bottom: 2px solid var(--line);
+    }
+    
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--accent), #5a7fd8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .subtitle {
+      font-size: 18px;
+      color: var(--text-weak);
+      margin-bottom: 24px;
+    }
+    
+    .instructions {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 20px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .instructions h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-weak);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    
+    .instructions p {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    
+    .section {
+      margin-bottom: 60px;
+    }
+    
+    h2 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    
+    .section-description {
+      font-size: 15px;
+      color: var(--text-weak);
+      margin-bottom: 24px;
+    }
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s ease;
+    }
+    
+    .card:hover {
+      border-color: var(--accent);
+    }
+    
+    .card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    
+    .card p {
+      font-size: 14px;
+      color: var(--text-weak);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    
+    .links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .link-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .link-item:hover {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+    
+    .link-label {
+      font-size: 13px;
+      color: var(--text-weak);
+      min-width: 120px;
+      font-weight: 500;
+    }
+    
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      word-break: break-all;
+      transition: opacity 0.2s ease;
+    }
+    
+    a:hover {
+      opacity: 0.8;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    .badge-green {
+      background: rgba(76, 209, 55, 0.15);
+      color: #4cd137;
+    }
+    
+    .badge-amber {
+      background: rgba(255, 165, 2, 0.15);
+      color: #ffa502;
+    }
+    
+    .badge-red {
+      background: rgba(255, 71, 87, 0.15);
+      color: #ff4757;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      h1 {
+        font-size: 32px;
+      }
+      
+      h2 {
+        font-size: 22px;
+      }
+    }
+    
+    code {
+      background: var(--line);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+    }
+    
+    .demo-anchor {
+      padding-top: 20px;
+      margin-top: 20px;
+      border-top: 2px solid var(--accent);
+    }
+    
+    .demo-anchor h3 {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>HoverPeek Demo</h1>
+      <p class="subtitle">Test all features of the HoverPeek Chrome Extension</p>
+      <div class="instructions">
+        <h3>How to Use</h3>
+        <p>Hover over any link below to see HoverPeek in action. Each section demonstrates different link types, risk levels, and AI-powered features.</p>
+      </div>
+    </header>
+
+    <!-- Basic Link Types -->
+    <section class="section">
+      <h2>Link Types</h2>
+      <p class="section-description">HoverPeek automatically detects and categorizes different types of links.</p>
+      
+      <div class="card">
+        <h3>🌐 Regular Webpages</h3>
+        <p>Standard webpage links that show AI-powered overviews when available.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">News Site:</span>
+            <a href="https://www.bbc.com/news">BBC News</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Tech Site:</span>
+            <a href="https://techcrunch.com">TechCrunch</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Wikipedia:</span>
+            <a href="https://en.wikipedia.org/wiki/Chrome_extension">Chrome Extensions on Wikipedia</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📄 PDF Documents</h3>
+        <p>PDF links show outlines and AI summaries when available.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Sample PDF:</span>
+            <a href="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf">W3C Test PDF</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Research Paper:</span>
+            <a href="https://arxiv.org/pdf/1706.03762.pdf">Attention Is All You Need (Transformer Paper)</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🖼️ Images & Media</h3>
+        <p>Direct links to images and videos with AI descriptions.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Image File:</span>
+            <a href="https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/280px-PNG_transparency_demonstration_1.png">Wikipedia Sample Image (PNG)</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Video File:</span>
+            <a href="https://www.w3schools.com/html/mov_bbb.mp4">Sample Video File</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>⬇️ Downloads</h3>
+        <p>Downloadable files with size information and risk assessment.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">ZIP Archive:</span>
+            <a href="https://github.com/microsoft/vscode/archive/refs/heads/main.zip">VSCode Source Code (ZIP)</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>✉️ Contact Links</h3>
+        <p>Email and phone links for direct communication.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Email:</span>
+            <a href="mailto:hello@example.com">Send Email</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Phone:</span>
+            <a href="tel:+1-234-567-8900">Call Phone Number</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔗 Anchor Links</h3>
+        <p>Links to sections within the same page (no network request).</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Same Page:</span>
+            <a href="#anchor-demo">Jump to Anchor Demo Section</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Risk Detection -->
+    <section class="section">
+      <h2>Security & Risk Detection</h2>
+      <p class="section-description">HoverPeek analyzes links for potential security issues before you click.</p>
+      
+      <div class="card">
+        <h3>⚠️ HTTP Links (HTTPS Downgrade)</h3>
+        <p>Links from secure HTTPS pages to insecure HTTP pages are flagged.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Insecure Link:</span>
+            <a href="http://example.com">HTTP Example Site</a>
+            <span class="badge badge-amber">Caution</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Another HTTP:</span>
+            <a href="http://neverssl.com">NeverSSL (intentionally HTTP)</a>
+            <span class="badge badge-amber">Caution</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔄 Redirect Chains</h3>
+        <p>URL shorteners and redirects are detected and counted.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Shortened URL:</span>
+            <a href="https://bit.ly/3ZjYx2H">Bitly Link (redirects)</a>
+            <span class="badge badge-amber">Caution</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Another Shortener:</span>
+            <a href="https://tinyurl.com/google">TinyURL Link</a>
+            <span class="badge badge-amber">Caution</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🎭 Anchor Text Mismatch</h3>
+        <p>Links where the displayed text doesn't match the actual destination (informational only).</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Deceptive Text:</span>
+            <a href="https://wikipedia.org">google.com</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Another Mismatch:</span>
+            <a href="https://example.com">github.com</a>
+            <span class="badge badge-green">Safe</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🚫 Blocked Links</h3>
+        <p>Dangerous schemes are automatically blocked for your safety.</p>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">JavaScript Scheme:</span>
+            <a href="javascript:alert('XSS')">JavaScript Alert (Dangerous)</a>
+            <span class="badge badge-red">Unsafe</span>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Data URI:</span>
+            <a href="data:text/html,<script>alert('XSS')</script>">Data URI with Script</a>
+            <span class="badge badge-red">Unsafe</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Real World Examples -->
+    <section class="section">
+      <h2>Real-World Examples</h2>
+      <p class="section-description">Common scenarios you might encounter while browsing.</p>
+      
+      <div class="card">
+        <h3>🌍 Popular Websites</h3>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Social Media:</span>
+            <a href="https://twitter.com">Twitter/X</a>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Video Platform:</span>
+            <a href="https://www.youtube.com">YouTube</a>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Search Engine:</span>
+            <a href="https://www.google.com">Google</a>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Developer Hub:</span>
+            <a href="https://github.com">GitHub</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📚 Documentation Sites</h3>
+        <div class="links">
+          <div class="link-item">
+            <span class="link-label">Python Docs:</span>
+            <a href="https://docs.python.org/3/">Python Documentation</a>
+          </div>
+          <div class="link-item">
+            <span class="link-label">TypeScript:</span>
+            <a href="https://www.typescriptlang.org/docs/">TypeScript Handbook</a>
+          </div>
+          <div class="link-item">
+            <span class="link-label">Chrome APIs:</span>
+            <a href="https://developer.chrome.com/docs/extensions/">Chrome Extensions API</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Anchor Demo Target -->
+    <section class="section demo-anchor" id="anchor-demo">
+      <h2>🎯 Anchor Link Destination</h2>
+      <p class="section-description">You've reached the anchor demo section! This demonstrates same-page anchor links.</p>
+      <div class="card">
+        <h3>Anchor Links Explained</h3>
+        <p>Anchor links (like <code>#anchor-demo</code>) jump to specific sections within the same page without making a network request. HoverPeek detects these and shows they're safe same-page navigations.</p>
+      </div>
+    </section>
+
+  </div>
+  
+  <!-- HoverPeek Content Script -->
+  <script src="content.js"></script>
+</body>
+</html>
+
