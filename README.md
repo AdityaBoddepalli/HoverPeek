@@ -1,15 +1,9 @@
-# HoverPeek - Chrome Extension
+# HoverPeek - Google Chrome Built-in AI Challenge 2025
 
-A Chrome extension built with React, TypeScript, and Tailwind CSS that shows webpage title previews when hovering over links.
+A Chrome extension built with React, TypeScript, and Tailwind CSS that shows webpage previews when hovering over links.
 
-## Features
 
-- **HoverPeek**: Hover over any link for 3 seconds to see a preview of the webpage title
-- **Elegant UX**: Magnifying glass icon with circular progress loader indicates activation
-- **Beautiful Design**: Minimal, tactile design with Aurora edge accent
-- **Dark/Light Theme**: Automatically adapts to system preferences
-
-## Development
+## How to test
 
 ### Prerequisites
 
