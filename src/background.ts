@@ -148,6 +148,13 @@ let summarizerAvailable: string | null = null;
 let promptAvailable: string | null = null;
 let offscreenDocumentCreated = false;
 
+// Session management
+let generalSession: any = null;
+let imageSession: any = null;
+let summarizerSession: any = null;
+const SESSION_IDLE_TIMEOUT = 10 * 60 * 1000; // 10 minutes - keeps sessions warm for frequent use while managing memory
+let sessionIdleTimer: number | null = null;
+
 // Get the domain from a URL
 function extractDomain(url: URL): string {
   try {
@@ -707,9 +714,95 @@ async function checkAIAvailability(): Promise<void> {
   }
 }
 
-checkAIAvailability().catch((error) => {
-  console.error('[AI] Failed to check availability:', error);
-});
+checkAIAvailability()
+  .then(() => initializeSessions())
+  .catch((error) => {
+    console.error('[AI] Failed to check availability:', error);
+  });
+
+// Get or create the general-purpose LanguageModel session
+async function getGeneralSession() {
+  if (!generalSession) {
+    generalSession = await LanguageModel.create();
+  }
+  resetSessionIdleTimer();
+  return generalSession;
+}
+
+// Get or create the image-specific LanguageModel session
+async function getImageSession() {
+  if (!imageSession) {
+    imageSession = await LanguageModel.create({
+      expectedInputs: [{ type: 'image' }],
+    });
+  }
+  resetSessionIdleTimer();
+  return imageSession;
+}
+
+// Get or create the Summarizer session
+async function getSummarizerSession() {
+  if (!summarizerSession) {
+    summarizerSession = await Summarizer.create({
+      type: 'tldr',
+      format: 'plain-text',
+      length: 'short',
+      expectedInputLanguages: ['en'],
+      outputLanguage: 'en',
+    });
+  }
+  resetSessionIdleTimer();
+  return summarizerSession;
+}
+
+// Reset idle timer to prevent premature cleanup
+function resetSessionIdleTimer() {
+  if (sessionIdleTimer) {
+    clearTimeout(sessionIdleTimer);
+  }
+  
+  sessionIdleTimer = setTimeout(() => {
+    cleanupSessions();
+  }, SESSION_IDLE_TIMEOUT) as unknown as number;
+}
+
+// Clean up all sessions after idle period
+function cleanupSessions() {
+  if (generalSession) {
+    generalSession.destroy();
+    generalSession = null;
+  }
+  if (imageSession) {
+    imageSession.destroy();
+    imageSession = null;
+  }
+  if (summarizerSession) {
+    summarizerSession.destroy();
+    summarizerSession = null;
+  }
+}
+
+// Initialize sessions on startup for faster first use
+async function initializeSessions(): Promise<void> {
+  if (promptAvailable === 'available') {
+    try {
+      await getGeneralSession();
+      await getImageSession();
+      console.log('[AI] Sessions initialized successfully');
+    } catch (error) {
+      console.error('[AI] Failed to initialize sessions:', error);
+    }
+  }
+  
+  if (summarizerAvailable === 'available') {
+    try {
+      await getSummarizerSession();
+      console.log('[AI] Summarizer session initialized successfully');
+    } catch (error) {
+      console.error('[AI] Failed to initialize summarizer session:', error);
+    }
+  }
+}
 
 async function injectContentScriptIntoExistingTabs() {
   try {
@@ -759,6 +852,11 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install' || details.reason === 'update') {
     injectContentScriptIntoExistingTabs();
   }
+});
+
+chrome.runtime.onSuspend.addListener(() => {
+  console.log('[AI] Extension suspending, cleaning up sessions');
+  cleanupSessions();
 });
 
 // Hash data for cache keys
@@ -880,15 +978,8 @@ async function generateImageDescription(
   }
 
   try {
-    const session = await LanguageModel.create({
-      initialPrompts: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that provides concise image descriptions.',
-        },
-      ],
-      expectedInputs: [{ type: 'image' }],
-    });
+    const baseSession = await getImageSession();
+    const session = await baseSession.clone();
 
     await session.append([
       {
@@ -914,6 +1005,11 @@ async function generateImageDescription(
     return description;
   } catch (error) {
     console.error('[Preview] Image description generation failed:', error);
+    // Reset corrupted session
+    if (imageSession) {
+      imageSession.destroy();
+      imageSession = null;
+    }
     return '';
   }
 }
@@ -944,7 +1040,8 @@ async function generateWebpagePreview(
 
     if (promptAvailable === 'available') {
       try {
-        const session = await LanguageModel.create();
+        const baseSession = await getGeneralSession();
+        const session = await baseSession.clone();
         const overviewPrompt = `Based on this webpage content from ${url}, provide a concise 2-3 sentence overview explaining what this page is about and what value it offers to readers:\n\n${excerpt}`;
         overview = await session.prompt(overviewPrompt);
         if (onOverview) {
@@ -953,6 +1050,11 @@ async function generateWebpagePreview(
         session.destroy();
       } catch (error) {
         console.error('[Preview] Webpage overview generation failed:', error);
+        // Reset corrupted session
+        if (generalSession) {
+          generalSession.destroy();
+          generalSession = null;
+        }
       }
     }
     
@@ -1000,7 +1102,8 @@ async function generatePDFPreview(
 
     if (promptAvailable === 'available') {
       try {
-        const session = await LanguageModel.create();
+        const baseSession = await getGeneralSession();
+        const session = await baseSession.clone();
         const outlinePrompt = `Extract up to 5 informative headings from this PDF text. Output one heading per line, no numbering or bullets:\n\n${truncatedForPrompt}`;
         const outlineResult = await session.prompt(outlinePrompt);
         
@@ -1014,6 +1117,10 @@ async function generatePDFPreview(
         session.destroy();
       } catch (error) {
         console.error('[Preview] PDF outline generation failed:', error);
+        if (generalSession) {
+          generalSession.destroy();
+          generalSession = null;
+        }
       }
     }
 
@@ -1024,20 +1131,16 @@ async function generatePDFPreview(
           ? text.substring(0, maxSummarizerLength)
           : text;
 
-        const summarizer = await Summarizer.create({
-          type: 'tldr',
-          format: 'plain-text',
-          length: 'short',
-          expectedInputLanguages: ['en'],
-          outputLanguage: 'en',
-        });
-
-        const summaryResult = await summarizer.summarize(truncatedForSummarizer);
+        const baseSummarizer = await getSummarizerSession();
+        const summaryResult = await baseSummarizer.summarize(truncatedForSummarizer);
         summary = summaryResult;
         onSummary(summary);
-        summarizer.destroy();
       } catch (error) {
         console.error('[Preview] PDF summary generation failed:', error);
+        if (summarizerSession) {
+          summarizerSession.destroy();
+          summarizerSession = null;
+        }
       }
     }
 
@@ -1055,7 +1158,8 @@ async function generateDownloadPreview(preflightResult: PreflightResult): Promis
   }
 
   try {
-    const session = await LanguageModel.create();
+    const baseSession = await getGeneralSession();
+    const session = await baseSession.clone();
     
     const fileName = preflightResult.finalUrl.split('/').pop() || 'file';
     const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
@@ -1094,6 +1198,10 @@ Be helpful and specific. Start with what it is (e.g., "Source code archive", "So
     return { overview, riskNote };
   } catch (error) {
     console.error('[Preview] Download preview generation failed:', error);
+    if (generalSession) {
+      generalSession.destroy();
+      generalSession = null;
+    }
     return { overview: '', riskNote: '' };
   }
 }
@@ -1535,6 +1643,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         summarizer.destroy();
         
         summarizerAvailable = await Summarizer.availability();
+        await initializeSessions(); // Initialize session after download
         
         sendResponse({ success: true, status: summarizerAvailable });
       } catch (error) {
@@ -1573,6 +1682,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         session.destroy();
         
         promptAvailable = await LanguageModel.availability();
+        await initializeSessions(); // Initialize session after download
         
         sendResponse({ success: true, status: promptAvailable });
       } catch (error) {
