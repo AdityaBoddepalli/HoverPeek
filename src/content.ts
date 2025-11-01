@@ -770,7 +770,49 @@ function handleLinkClick(event: MouseEvent): void {
   
   if (!link) return;
   
-  // Hide preview on click
+  // Check if this link has a red risk level and block it
+  const state = activeLinks.get(link);
+  if (state?.preflightResult?.risk === RiskLevel.Red) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Add visual feedback that the link is blocked
+    if (state.previewElement) {
+      const preview = state.previewElement;
+      preview.style.animation = 'shake 0.5s ease-in-out';
+      
+      // Add a blocking message if not already present
+      const existingBlockMsg = preview.querySelector('.blocked-message');
+      if (!existingBlockMsg) {
+        const blockMsg = document.createElement('div');
+        blockMsg.className = 'blocked-message';
+        blockMsg.textContent = '🚫 This link is blocked for your safety';
+        blockMsg.style.cssText = `
+          background: rgba(255, 71, 87, 0.15);
+          color: #ff4757;
+          padding: 8px 12px;
+          border-radius: 8px;
+          font-size: 13px;
+          font-weight: 600;
+          text-align: center;
+          margin-top: 8px;
+          border: 1px solid rgba(255, 71, 87, 0.3);
+        `;
+        preview.appendChild(blockMsg);
+        
+        // Remove the message after 2 seconds
+        setTimeout(() => {
+          if (blockMsg.parentNode) {
+            blockMsg.remove();
+          }
+        }, 2000);
+      }
+    }
+    
+    return;
+  }
+  
+  // Hide preview on click for safe links
   cleanup(link);
 }
 
